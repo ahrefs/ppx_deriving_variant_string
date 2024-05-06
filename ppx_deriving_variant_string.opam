@@ -1,0 +1,34 @@
+opam-version: "2.0"
+synopsis: "OCaml PPX deriver that generates converters between variants and strings"
+description: "OCaml PPX deriver that generates converters between regular or polymorphic variants and strings. Supports both OCaml and Reason casing."
+maintainer: [
+  "Javier Chávarri <javier.chavarri@ahrefs.com>"
+]
+authors: [
+  "Javier Chávarri <javier.chavarri@ahrefs.com>"
+]
+tags: ["syntax" "org:ahrefs"]
+license: "MIT"
+homepage: "https://github.com/ahrefs/ppx_deriving_variant_string"
+bug-reports: "https://github.com/ahrefs/ppx_deriving_variant_string/issues"
+dev-repo: "git+https://github.com/ahrefs/ppx_deriving_variant_string.git"
+depends: [
+  "ocaml"
+  "dune"
+  "ppxlib"
+  "ounit" {with-test}
+  "ocaml-lsp-server" {with-test}
+  "ocamlformat" {with-test}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+  ]
+]

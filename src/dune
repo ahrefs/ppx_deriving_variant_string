@@ -1,0 +1,6 @@
+(library
+ (name ppx_deriving_variant_string)
+ (preprocess
+  (pps ppxlib.metaquot))
+ (libraries ppxlib ppxlib.astlib)
+ (kind ppx_deriver))
