@@ -6,55 +6,42 @@ open OUnit2
 
 let printer x = x
 
-type v =
-  | Foo
-  | Bar
-  | Baz
-[@@deriving toString]
-let test_variant ctxt =
+type v = Foo | Bar | Baz [@@deriving toString]
+
+let test_variant _ctxt =
   assert_equal ~printer "Foo" (vToString Foo);
   assert_equal ~printer "Bar" (vToString Bar);
   assert_equal ~printer "Baz" (vToString Baz)
 
-type pv1 =
-  [ `Foo
-  | `Bar [@as "bar"]
-  ]
-[@@deriving toString]
-let test_poly ctxt =
+type pv1 = [ `Foo | `Bar [@as "bar"] ] [@@deriving toString]
+
+let test_poly _ctxt =
   assert_equal ~printer "Foo" (pv1ToString `Foo);
   assert_equal ~printer "bar" (pv1ToString `Bar)
 
-(* type pv2 =
-     [ `Baz
-     | pv1
-     ]
-   [@@deriving toString]
-   let test_poly_inherit ctxt =
-     assert_equal ~printer "`Foo" (show_pv2 `Foo);
-     assert_equal ~printer "`Baz" (show_pv2 `Baz) *)
+type base = [ `Foo [@name "foo"] | `Bar [@name "bar"] ] [@@deriving toString]
+type extended = [ base | `Baz [@name "baz"] ] [@@deriving toString]
 
-type foo =
-  | F
-  | B
-  | C
-and bar =
-  | A
-  | D
-[@@deriving toString]
+let test_poly_inherit _ctxt =
+  assert_equal ~printer "foo" (extendedToString `Foo);
+  assert_equal ~printer "bar" (extendedToString `Bar);
+  assert_equal ~printer "baz" (extendedToString `Baz)
 
-let test_mrec ctxt =
+type foo = F | B | C
+and bar = A | D [@@deriving toString]
+
+let test_mrec _ctxt =
   let e1 = B in
   assert_equal ~printer "B" (fooToString e1)
 
 type variant_string =
   | First [@as "first"]
-  | Second [@as "second"]
+  | Second [@name "second"]
   | Third
   | Fourth [@as "4th"]
 [@@deriving toString]
 
-let test_variant_printer ctxt =
+let test_variant_printer _ctxt =
   assert_equal ~printer "first" (variant_stringToString First);
   assert_equal ~printer "second" (variant_stringToString Second);
   assert_equal ~printer "Third" (variant_stringToString Third);
@@ -66,16 +53,17 @@ end = struct
   type t = A [@@deriving toString]
 end
 
-let test_module ctxt = assert_equal ~printer "A" (M.toString M.A)
+let test_module _ctxt = assert_equal ~printer "A" (M.toString M.A)
 
 let suite =
   "Test deriving(toString)"
   >::: [
          "test_variant" >:: test_variant;
          "test_poly" >:: test_poly;
+         "test_poly_inherit" >:: test_poly_inherit;
          "test_mrec" >:: test_mrec;
          "test_variant_printer" >:: test_variant_printer;
          "test_module" >:: test_module;
        ]
 
-let _ = run_test_tt_main suite
+let () = run_test_tt_main suite
