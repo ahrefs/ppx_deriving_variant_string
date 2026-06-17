@@ -32,22 +32,44 @@ let rec expr_of_typ ~deriver typ =
     let cases =
       fields
       |> List.map (fun field ->
-           match field.prf_desc with
-           | Rtag (label, true (*empty*), []) ->
-             let string =
-               match Attribute.get rtag_attr_as field with
-               | Some l -> l
-               | None -> label.txt
-             in
-             Exp.case (Pat.variant label.txt None) (estring ~loc string)
-           | Rtag (_label, false, [ typ ]) ->
-             raise_errorf ~loc:ptyp_loc "%s cannot be derived for variant with payload %s" deriver
-               (string_of_core_type typ)
-           | Rinherit _typ ->
-             (* todo: support inheritance *)
-             raise_errorf ~loc:ptyp_loc "%s cannot be derived for variant with inheritance %s" deriver
-               (string_of_core_type typ)
-           | _ -> raise_errorf ~loc:ptyp_loc "%s cannot be derived for %s" deriver (string_of_core_type typ))
+        match field.prf_desc with
+        | Rtag (label, true (*empty*), []) ->
+          let string =
+            match get_rtag_override field with
+            | Some l -> l
+            | None -> label.txt
+          in
+          Exp.case (Pat.variant label.txt None) (estring ~loc string)
+        | Rtag (label, false, [ typ ]) ->
+          if rtag_has_any_no_string field then (
+            let attr_name = if rtag_has_no_string field then "no_string" else "no_string_exn" in
+            let msg =
+              Printf.sprintf "%s: cannot stringify constructor `%s (marked [@%s])" deriver label.txt attr_name
+            in
+            Exp.case (Pat.variant label.txt (Some (Pat.any ()))) [%expr failwith [%e estring ~loc msg]])
+          else if rtag_has_no_args field then (
+            let string =
+              match get_rtag_override field with
+              | Some l -> l
+              | None -> label.txt
+            in
+            Exp.case (Pat.variant label.txt (Some (Pat.any ()))) (estring ~loc string))
+          else
+            raise_errorf ~loc:ptyp_loc "%s cannot be derived for variant with payload %s" deriver
+              (string_of_core_type typ)
+        | Rinherit { ptyp_desc = Ptyp_constr ({ txt = lid; loc = lid_loc }, _); _ } ->
+          let fn_lid =
+            map_last_lid
+              (fun name -> Ppx_deriving.mangle ~casing:(casing_of_deriver deriver) (`Suffix deriver) name)
+              lid
+          in
+          Exp.case
+            (Pat.alias (Pat.type_ { txt = lid; loc = lid_loc }) (mknoloc "v"))
+            [%expr [%e Exp.ident { txt = fn_lid; loc = ptyp_loc }] v]
+        | Rinherit _typ ->
+          raise_errorf ~loc:ptyp_loc "%s cannot be derived for non-type inheritance %s" deriver
+            (string_of_core_type typ)
+        | _ -> raise_errorf ~loc:ptyp_loc "%s cannot be derived for %s" deriver (string_of_core_type typ))
     in
     Exp.function_ cases
   | { ptyp_desc = Ptyp_var name; _ } -> [%expr [%e evar ~loc ("poly_" ^ name)] fmt]
@@ -62,13 +84,31 @@ let str_of_type ~casing ~deriver ({ ptype_loc = loc; _ } as type_decl) =
       let cases =
         constrs
         |> List.map (fun ({ pcd_name = { txt = name'; _ }; pcd_args; _ } as constr) ->
-             let constr_name = name' in
-             match Attribute.get constr_attr_as constr, pcd_args with
-             | Some string, Pcstr_tuple [] -> Exp.case (pconstr name') (estring ~loc string)
-             | Some _, Pcstr_tuple _ -> raise_errorf ~loc "%s cannot be derived for variant with payload" deriver
-             | _, Pcstr_record _ -> raise_errorf ~loc "%s cannot be derived for variant with record payload" deriver
-             | None, Pcstr_tuple [] -> Exp.case (pconstr name') (estring ~loc constr_name)
-             | None, Pcstr_tuple _typs -> raise_errorf ~loc "%s cannot be derived for variant with payload" deriver)
+          let constr_name = name' in
+          let no_args = constr_has_no_args constr in
+          let no_string_exn = constr_has_no_string_exn constr in
+          if constr_has_no_string constr then
+            raise_errorf ~loc "%s: [@no_string] is polymorphic-variant only; use [@no_string_exn] on classic variants"
+              deriver;
+          let name_to_use =
+            match get_constr_override constr with
+            | Some s -> s
+            | None -> constr_name
+          in
+          let pat_with_payload () = Pat.construct (lid_of_string name') (Some (Pat.any ())) in
+          let fail_msg () =
+            Printf.sprintf "%s: cannot stringify constructor %s (marked [@no_string_exn])" deriver constr_name
+          in
+          match pcd_args with
+          | Pcstr_tuple [] -> Exp.case (pconstr name') (estring ~loc name_to_use)
+          | Pcstr_tuple _ when no_string_exn ->
+            Exp.case (pat_with_payload ()) [%expr failwith [%e estring ~loc (fail_msg ())]]
+          | Pcstr_record _ when no_string_exn ->
+            Exp.case (pat_with_payload ()) [%expr failwith [%e estring ~loc (fail_msg ())]]
+          | Pcstr_tuple _ when no_args -> Exp.case (pat_with_payload ()) (estring ~loc name_to_use)
+          | Pcstr_record _ when no_args -> Exp.case (pat_with_payload ()) (estring ~loc name_to_use)
+          | Pcstr_record _ -> raise_errorf ~loc "%s cannot be derived for variant with record payload" deriver
+          | Pcstr_tuple _ -> raise_errorf ~loc "%s cannot be derived for variant with payload" deriver)
       in
       Exp.function_ cases
     | Ptype_record _, _ -> raise_errorf ~loc "%s cannot be derived for record type" deriver
@@ -80,11 +120,11 @@ let str_of_type ~casing ~deriver ({ ptype_loc = loc; _ } as type_decl) =
   [ Vb.mk (Pat.constraint_ toString_var toString_type) toString_exp ]
 
 let str_type_decl ~casing ~deriver =
-  Deriving.Generator.V2.make Deriving.Args.empty (fun ~ctxt:_ (_, type_decls) ->
+  Deriving.Generator.V2.make Deriving.Args.empty ~attributes (fun ~ctxt:_ (_, type_decls) ->
     [ Str.value Nonrecursive (List.concat (List.map (str_of_type ~casing ~deriver) type_decls)) ])
 
 let sig_type_decl ~casing ~deriver =
-  Deriving.Generator.V2.make Deriving.Args.empty (fun ~ctxt:_ (_, type_decls) ->
+  Deriving.Generator.V2.make Deriving.Args.empty ~attributes (fun ~ctxt:_ (_, type_decls) ->
     List.concat (List.map (sig_of_type ~casing ~deriver) type_decls))
 
 let () =

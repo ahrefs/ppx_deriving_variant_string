@@ -11,6 +11,7 @@ type v =
   | Bar
   | Baz
 [@@deriving toString]
+
 let test_variant ctxt =
   assert_equal ~printer "Foo" (vToString Foo);
   assert_equal ~printer "Bar" (vToString Bar);
@@ -21,6 +22,7 @@ type pv1 =
   | `Bar [@as "bar"]
   ]
 [@@deriving toString]
+
 let test_poly ctxt =
   assert_equal ~printer "Foo" (pv1ToString `Foo);
   assert_equal ~printer "bar" (pv1ToString `Bar)
@@ -49,7 +51,7 @@ let test_mrec ctxt =
 
 type variant_string =
   | First [@as "first"]
-  | Second [@as "second"]
+  | Second [@name "second"]
   | Third
   | Fourth [@as "4th"]
 [@@deriving toString]
@@ -78,4 +80,4 @@ let suite =
          "test_module" >:: test_module;
        ]
 
-let _ = run_test_tt_main suite
+let () = run_test_tt_main suite
