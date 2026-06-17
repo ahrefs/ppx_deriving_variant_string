@@ -6,21 +6,15 @@ open OUnit2
 
 let printer x = x
 
-type v =
-  | Foo
-  | Bar
-  | Baz
-[@@deriving toString]
+type v = Foo | Bar | Baz [@@deriving toString]
+
 let test_variant ctxt =
   assert_equal ~printer "Foo" (vToString Foo);
   assert_equal ~printer "Bar" (vToString Bar);
   assert_equal ~printer "Baz" (vToString Baz)
 
-type pv1 =
-  [ `Foo
-  | `Bar [@as "bar"]
-  ]
-[@@deriving toString]
+type pv1 = [ `Foo | `Bar [@as "bar"] ] [@@deriving toString]
+
 let test_poly ctxt =
   assert_equal ~printer "Foo" (pv1ToString `Foo);
   assert_equal ~printer "bar" (pv1ToString `Bar)
@@ -34,14 +28,8 @@ let test_poly ctxt =
      assert_equal ~printer "`Foo" (show_pv2 `Foo);
      assert_equal ~printer "`Baz" (show_pv2 `Baz) *)
 
-type foo =
-  | F
-  | B
-  | C
-and bar =
-  | A
-  | D
-[@@deriving toString]
+type foo = F | B | C
+and bar = A | D [@@deriving toString]
 
 let test_mrec ctxt =
   let e1 = B in
@@ -49,7 +37,7 @@ let test_mrec ctxt =
 
 type variant_string =
   | First [@as "first"]
-  | Second [@as "second"]
+  | Second [@name "second"]
   | Third
   | Fourth [@as "4th"]
 [@@deriving toString]
@@ -78,4 +66,4 @@ let suite =
          "test_module" >:: test_module;
        ]
 
-let _ = run_test_tt_main suite
+let () = run_test_tt_main suite
