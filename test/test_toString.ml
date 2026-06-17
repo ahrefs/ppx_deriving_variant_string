@@ -6,14 +6,22 @@ open OUnit2
 
 let printer x = x
 
-type v = Foo | Bar | Baz [@@deriving toString]
+type v =
+  | Foo
+  | Bar
+  | Baz
+[@@deriving toString]
 
 let test_variant ctxt =
   assert_equal ~printer "Foo" (vToString Foo);
   assert_equal ~printer "Bar" (vToString Bar);
   assert_equal ~printer "Baz" (vToString Baz)
 
-type pv1 = [ `Foo | `Bar [@as "bar"] ] [@@deriving toString]
+type pv1 =
+  [ `Foo
+  | `Bar [@as "bar"]
+  ]
+[@@deriving toString]
 
 let test_poly ctxt =
   assert_equal ~printer "Foo" (pv1ToString `Foo);
@@ -28,8 +36,14 @@ let test_poly ctxt =
      assert_equal ~printer "`Foo" (show_pv2 `Foo);
      assert_equal ~printer "`Baz" (show_pv2 `Baz) *)
 
-type foo = F | B | C
-and bar = A | D [@@deriving toString]
+type foo =
+  | F
+  | B
+  | C
+and bar =
+  | A
+  | D
+[@@deriving toString]
 
 let test_mrec ctxt =
   let e1 = B in

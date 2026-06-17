@@ -5,9 +5,15 @@
 open OUnit2
 
 let printer x = x
-let opt_printer f x = match x with Some v -> "Some " ^ f v | None -> "None"
+let opt_printer f x =
+  match x with
+  | Some v -> "Some " ^ f v
+  | None -> "None"
 
-type variant = First [@as "first"] | Second | Third [@name "3rd"]
+type variant =
+  | First [@as "first"]
+  | Second
+  | Third [@name "3rd"]
 [@@deriving fromString, toString]
 
 let test_variant ctxt =
@@ -17,7 +23,10 @@ let test_variant ctxt =
   assert_equal ~printer (Some Third) (variantFromString "3rd");
   assert_equal ~printer None (variantFromString "First")
 
-type polyvar = [ `first [@as "First"] | `second ]
+type polyvar =
+  [ `first [@as "First"]
+  | `second
+  ]
 [@@deriving fromString, toString]
 
 let test_polyvar ctxt =
@@ -36,30 +45,24 @@ let test_module ctxt =
   let printer = opt_printer N.toString in
   assert_equal ~printer (Some N.A) (N.fromString "A");
   assert_equal N.A (N.fromStringExn "A");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_fromString.N.fromStringExn: B")
-    (fun () -> N.fromStringExn "B")
+  assert_raises (Invalid_argument "Dune__exe__Test_fromString.N.fromStringExn: B") (fun () -> N.fromStringExn "B")
 
 let test_variant_exn _ctxt =
   assert_equal First (variantFromStringExn "first");
   assert_equal Second (variantFromStringExn "Second");
   assert_equal Third (variantFromStringExn "3rd");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_fromString.variantFromStringExn: First")
-    (fun () -> variantFromStringExn "First")
+  assert_raises (Invalid_argument "Dune__exe__Test_fromString.variantFromStringExn: First") (fun () ->
+    variantFromStringExn "First")
 
 let test_polyvar_exn _ctxt =
   assert_equal `first (polyvarFromStringExn "First");
   assert_equal `second (polyvarFromStringExn "second");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_fromString.polyvarFromStringExn: first")
-    (fun () -> polyvarFromStringExn "first")
+  assert_raises (Invalid_argument "Dune__exe__Test_fromString.polyvarFromStringExn: first") (fun () ->
+    polyvarFromStringExn "first")
 
 let test_module_exn _ctxt =
   assert_equal N.A (N.fromStringExn "A");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_fromString.N.fromStringExn: B")
-    (fun () -> N.fromStringExn "B")
+  assert_raises (Invalid_argument "Dune__exe__Test_fromString.N.fromStringExn: B") (fun () -> N.fromStringExn "B")
 
 let suite =
   "Test deriving(fromString)"

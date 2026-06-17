@@ -6,14 +6,22 @@ open OUnit2
 
 let printer x = x
 
-type v = Foo | Bar | Baz [@@deriving to_string]
+type v =
+  | Foo
+  | Bar
+  | Baz
+[@@deriving to_string]
 
 let test_variant ctxt =
   assert_equal ~printer "Foo" (v_to_string Foo);
   assert_equal ~printer "Bar" (v_to_string Bar);
   assert_equal ~printer "Baz" (v_to_string Baz)
 
-type pv1 = [ `Foo | `Bar [@as "bar"] ] [@@deriving to_string]
+type pv1 =
+  [ `Foo
+  | `Bar [@as "bar"]
+  ]
+[@@deriving to_string]
 
 let test_poly ctxt =
   assert_equal ~printer "Foo" (pv1_to_string `Foo);
@@ -28,8 +36,14 @@ let test_poly ctxt =
      assert_equal ~printer "`Foo" (show_pv2 `Foo);
      assert_equal ~printer "`Baz" (show_pv2 `Baz) *)
 
-type foo = F | B | C
-and bar = A | D [@@deriving to_string]
+type foo =
+  | F
+  | B
+  | C
+and bar =
+  | A
+  | D
+[@@deriving to_string]
 
 let test_mrec ctxt =
   let e1 = B in
@@ -72,54 +86,52 @@ let test_no_args_classic ctxt =
 type poly_with_no_args =
   [ `Known [@name "known"]
   | `Unknown of string [@no_args]
-  | `Wrapped of int [@name "wrapped"] [@no_args] ]
+  | `Wrapped of int [@name "wrapped"] [@no_args]
+  ]
 [@@deriving to_string]
 
 let test_no_args_poly ctxt =
   assert_equal ~printer "known" (poly_with_no_args_to_string `Known);
-  assert_equal ~printer "Unknown"
-    (poly_with_no_args_to_string (`Unknown "anything"));
+  assert_equal ~printer "Unknown" (poly_with_no_args_to_string (`Unknown "anything"));
   assert_equal ~printer "wrapped" (poly_with_no_args_to_string (`Wrapped 99))
 
 (* [@no_string_exn]: to_string raises on the marked constructor.
    Available on both classic and polymorphic variants. of_string skips
    the constructor (its return type is still the full type). *)
-type with_no_string_exn = KnownC | UnknownC of string [@no_string_exn]
+type with_no_string_exn =
+  | KnownC
+  | UnknownC of string [@no_string_exn]
 [@@deriving to_string]
 
 let test_no_string_exn_classic ctxt =
   assert_equal ~printer "KnownC" (with_no_string_exn_to_string KnownC);
-  assert_raises
-    (Failure
-       "to_string: cannot stringify constructor UnknownC (marked \
-        [@no_string_exn])") (fun () ->
-      with_no_string_exn_to_string (UnknownC "anything"))
+  assert_raises (Failure "to_string: cannot stringify constructor UnknownC (marked [@no_string_exn])") (fun () ->
+    with_no_string_exn_to_string (UnknownC "anything"))
 
 type poly_with_no_string_exn =
-  [ `KnownE [@name "known"] | `UnknownE of string [@no_string_exn] ]
+  [ `KnownE [@name "known"]
+  | `UnknownE of string [@no_string_exn]
+  ]
 [@@deriving to_string]
 
 let test_no_string_exn_poly ctxt =
   assert_equal ~printer "known" (poly_with_no_string_exn_to_string `KnownE);
-  assert_raises
-    (Failure
-       "to_string: cannot stringify constructor `UnknownE (marked \
-        [@no_string_exn])") (fun () ->
-      poly_with_no_string_exn_to_string (`UnknownE "anything"))
+  assert_raises (Failure "to_string: cannot stringify constructor `UnknownE (marked [@no_string_exn])") (fun () ->
+    poly_with_no_string_exn_to_string (`UnknownE "anything"))
 
 (* [@no_string] (poly-only): to_string raises (same as [@no_string_exn]);
    of_string also narrows the return type so [`Unknown _] is not
    constructible by the parser. *)
 type poly_with_no_string =
-  [ `KnownN [@name "known"] | `UnknownN of string [@no_string] ]
+  [ `KnownN [@name "known"]
+  | `UnknownN of string [@no_string]
+  ]
 [@@deriving to_string]
 
 let test_no_string_poly ctxt =
   assert_equal ~printer "known" (poly_with_no_string_to_string `KnownN);
-  assert_raises
-    (Failure
-       "to_string: cannot stringify constructor `UnknownN (marked [@no_string])")
-    (fun () -> poly_with_no_string_to_string (`UnknownN "anything"))
+  assert_raises (Failure "to_string: cannot stringify constructor `UnknownN (marked [@no_string])") (fun () ->
+    poly_with_no_string_to_string (`UnknownN "anything"))
 
 let suite =
   "Test deriving(to_string)"

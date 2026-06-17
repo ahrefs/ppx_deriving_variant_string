@@ -5,9 +5,15 @@
 open OUnit2
 
 let printer x = x
-let opt_printer f x = match x with Some v -> "Some " ^ f v | None -> "None"
+let opt_printer f x =
+  match x with
+  | Some v -> "Some " ^ f v
+  | None -> "None"
 
-type variant = First [@as "first"] | Second | Third [@name "3rd"]
+type variant =
+  | First [@as "first"]
+  | Second
+  | Third [@name "3rd"]
 [@@deriving of_string, to_string]
 
 let test_variant ctxt =
@@ -17,7 +23,10 @@ let test_variant ctxt =
   assert_equal ~printer (Some Third) (variant_of_string "3rd");
   assert_equal ~printer None (variant_of_string "First")
 
-type polyvar = [ `first [@as "First"] | `second ]
+type polyvar =
+  [ `first [@as "First"]
+  | `second
+  ]
 [@@deriving of_string, to_string]
 
 let test_polyvar ctxt =
@@ -40,27 +49,30 @@ let test_variant_exn _ctxt =
   assert_equal First (variant_of_string_exn "first");
   assert_equal Second (variant_of_string_exn "Second");
   assert_equal Third (variant_of_string_exn "3rd");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_of_string.variant_of_string_exn: First")
-    (fun () -> variant_of_string_exn "First")
+  assert_raises (Invalid_argument "Dune__exe__Test_of_string.variant_of_string_exn: First") (fun () ->
+    variant_of_string_exn "First")
 
 let test_polyvar_exn _ctxt =
   assert_equal `first (polyvar_of_string_exn "First");
   assert_equal `second (polyvar_of_string_exn "second");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_of_string.polyvar_of_string_exn: first")
-    (fun () -> polyvar_of_string_exn "first")
+  assert_raises (Invalid_argument "Dune__exe__Test_of_string.polyvar_of_string_exn: first") (fun () ->
+    polyvar_of_string_exn "first")
 
 let test_module_exn _ctxt =
   assert_equal N.A (N.of_string_exn "A");
-  assert_raises
-    (Invalid_argument "Dune__exe__Test_of_string.N.of_string_exn: B") (fun () ->
-      N.of_string_exn "B")
+  assert_raises (Invalid_argument "Dune__exe__Test_of_string.N.of_string_exn: B") (fun () -> N.of_string_exn "B")
 
-type base = [ `Foo [@name "foo"] | `Bar [@name "bar"] ]
+type base =
+  [ `Foo [@name "foo"]
+  | `Bar [@name "bar"]
+  ]
 [@@deriving of_string, to_string]
 
-type extended = [ base | `Baz [@name "baz"] ] [@@deriving of_string, to_string]
+type extended =
+  [ base
+  | `Baz [@name "baz"]
+  ]
+[@@deriving of_string, to_string]
 
 let test_inherit ctxt =
   let printer = opt_printer extended_to_string in
@@ -70,7 +82,9 @@ let test_inherit ctxt =
   assert_equal ~printer None (extended_of_string "unknown")
 
 (* [@no_args] payload constructors are skipped by of_string. *)
-type with_no_args = Known [@name "known"] | Tagged of int [@no_args]
+type with_no_args =
+  | Known [@name "known"]
+  | Tagged of int [@no_args]
 [@@deriving of_string, to_string]
 
 let test_no_args_classic ctxt =
@@ -80,7 +94,9 @@ let test_no_args_classic ctxt =
   assert_equal ~printer None (with_no_args_of_string "anything")
 
 type poly_with_no_args =
-  [ `Known [@name "known"] | `Unknown of string [@no_args] ]
+  [ `Known [@name "known"]
+  | `Unknown of string [@no_args]
+  ]
 [@@deriving of_string, to_string]
 
 let test_no_args_poly ctxt =
@@ -104,7 +120,9 @@ let test_no_string_exn_classic ctxt =
   assert_equal ~printer None (with_no_string_exn_of_string "anything")
 
 type poly_with_no_string_exn =
-  [ `KnownE [@name "kp"] | `UnknownE of string [@no_string_exn] ]
+  [ `KnownE [@name "kp"]
+  | `UnknownE of string [@no_string_exn]
+  ]
 [@@deriving of_string, to_string]
 
 let test_no_string_exn_poly ctxt =
@@ -118,7 +136,9 @@ let test_no_string_exn_poly ctxt =
    The annotation below documents the narrowed shape - the compiler enforces
    it via the inline polyvariant signature emitted by the deriver. *)
 type poly_with_no_string =
-  [ `KnownN [@name "k"] | `UnknownN of string [@no_string] ]
+  [ `KnownN [@name "k"]
+  | `UnknownN of string [@no_string]
+  ]
 [@@deriving of_string, to_string]
 
 let test_no_string_poly ctxt =
