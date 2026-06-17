@@ -37,9 +37,9 @@ let rtag_attr_no_args = attr_no_args Attribute.Context.rtag
 
 (* [@no_string_exn]: like [@no_args] but the to_string side raises instead of
    silently producing the constructor name. Useful for open-enum-style
-   catch-all constructors (e.g. [`Unknown of string]) where a string projection
-   has no meaningful value to return - better to fail loudly than to leak the
-   literal "Unknown" downstream.
+   catch-all constructors (e.g. [`Unknown of string [@json.catch_all]]) where
+   a string projection has no meaningful value to return - better to fail
+   loudly than to leak the literal "Unknown" downstream.
    of_string skips the constructor entirely (same as [@no_args]); the
    function still returns the full type so callers can hold an
    [`Unknown _] value built elsewhere. *)
