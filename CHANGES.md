@@ -1,4 +1,4 @@
-# Unreleased
+# 1.1.0
 
 - Import upstream deriver improvements:
   - add `[@name]` as an alias for `[@as]`
